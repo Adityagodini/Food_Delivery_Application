@@ -1,0 +1,10 @@
+{
+  "name": "food-delivery-application",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix Quick_Backend\" \"npm run dev --prefix Admin_Frontend\" \"npm run dev --prefix Client_frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
