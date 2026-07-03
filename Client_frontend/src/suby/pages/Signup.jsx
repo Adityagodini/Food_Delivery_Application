@@ -11,7 +11,7 @@ const Signup = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:4000/api/signup', { name, email, password });
+      await axios.post('https://food-delivery-application-zcdk.onrender.com/api/signup', { name, email, password });
       alert('Signup successful');
       navigate('/login');
     } catch (err) {
