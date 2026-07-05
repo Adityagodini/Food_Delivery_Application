@@ -9,13 +9,27 @@ const secretKey = process.env.WhatIsYourName
 
 
 
-const vendorRegister = async(req, res) => {
-    const { username, email, password } = req.body;
+const vendorRegister = async (req, res) => {
     try {
-        const vendorEmail = await Vendor.findOne({ email });
-        if (vendorEmail) {
-            return res.status(400).json("Email already taken");
+        let { username, email, password } = req.body;
+
+        if (!username || !email || !password) {
+            return res.status(400).json({
+                error: "Username, email and password are required"
+            });
         }
+
+        username = username.trim();
+        email = email.trim().toLowerCase();
+
+        const vendorEmail = await Vendor.findOne({ email });
+
+        if (vendorEmail) {
+        return res.status(400).json({
+            error: "Email already taken"
+        });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const newVendor = new Vendor({
@@ -23,37 +37,83 @@ const vendorRegister = async(req, res) => {
             email,
             password: hashedPassword
         });
-        await newVendor.save();
 
-        res.status(201).json({ message: "Vendor registered successfully" });
-        console.log('registered')
+        const savedVendor = await newVendor.save();
+
+        console.log("Vendor registered:", savedVendor._id);
+
+        return res.status(201).json({
+            message: "Vendor registered successfully",
+            vendorId: savedVendor._id
+        });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Internal server error" })
+        console.error("VENDOR REGISTER ERROR:", error);
+
+        return res.status(500).json({
+            error: error.message || "Internal server error"
+        });
     }
+};
 
-}
-
-const vendorLogin = async(req, res) => {
-    const { email, password } = req.body;
+const vendorLogin = async (req, res) => {
     try {
-        const vendor = await Vendor.findOne({ email });
-        if (!vendor || !(await bcrypt.compare(password, vendor.password))) {
-            return res.status(401).json({ error: "Invalid username or password" })
+        let { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                error: "Email and password are required"
+            });
         }
-        const token = jwt.sign({ vendorId: vendor._id }, secretKey, { expiresIn: "1h" })
 
-        const vendorId = vendor._id;
+        email = email.trim().toLowerCase();
 
-        res.status(200).json({ success: "Login successful", token, vendorId })
-        console.log(email, "this is token", token);
+        const vendor = await Vendor.findOne({ email });
+
+        if (!vendor) {
+            return res.status(401).json({
+                error: "Invalid email or password"
+            });
+        }
+
+        const passwordMatch = await bcrypt.compare(
+            password,
+            vendor.password
+        );
+
+        if (!passwordMatch) {
+            return res.status(401).json({
+                error: "Invalid email or password"
+            });
+        }
+
+        if (!secretKey) {
+            console.error("JWT secret is missing");
+            return res.status(500).json({
+                error: "Server configuration error"
+            });
+        }
+
+        const token = jwt.sign(
+            { vendorId: vendor._id },
+            secretKey,
+            { expiresIn: "1h" }
+        );
+
+        return res.status(200).json({
+            success: "Login successful",
+            token,
+            vendorId: vendor._id
+        });
+
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ error: "Internal server error" });
-    }
+        console.error("VENDOR LOGIN ERROR:", error);
 
-}
+        return res.status(500).json({
+            error: error.message || "Internal server error"
+        });
+    }
+};
 
 const getAllVendors = async(req, res) => {
     try {

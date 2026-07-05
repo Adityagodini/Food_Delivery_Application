@@ -14,37 +14,59 @@ const Register = ({ showLoginHandler }) => {
     setShowPassword(!showPassword);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true); // Set loading to true when the request starts
-    try {
-      const response = await fetch(`${API_URL}/vendor/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ username, email, password })
-      });
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-      const data = await response.json();
-      if (response.ok) {
-        console.log(data);
-        setUsername("");
-        setEmail("");
-        setPassword("");
-        alert("Vendor registered successfully");
-        showLoginHandler();
-      } else {
-        setError(data.error);
-        alert("Registration Failed, Contact Admin")
-      }
-    } catch (error) {
-      console.error("Registration failed", error);
-      alert("Registration failed");
-    } finally {
-      setLoading(false); 
+  setError("");
+  setLoading(true);
+
+  try {
+    const response = await fetch(`${API_URL}/vendor/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        username: username.trim(),
+        email: email.trim().toLowerCase(),
+        password
+      })
+    });
+
+    const data = await response.json();
+
+    console.log("REGISTER STATUS:", response.status);
+    console.log("REGISTER RESPONSE:", data);
+
+    if (!response.ok) {
+      const message =
+        data?.error ||
+        data?.message ||
+        (typeof data === "string" ? data : "Registration failed");
+
+      setError(message);
+      alert(message);
+      return;
     }
-  };
+
+    alert(data.message || "Vendor registered successfully");
+
+    setUsername("");
+    setEmail("");
+    setPassword("");
+
+    showLoginHandler();
+
+  } catch (error) {
+    console.error("REGISTRATION FETCH ERROR:", error);
+
+    setError("Could not connect to server");
+    alert("Could not connect to server");
+
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="registerSection">
@@ -65,6 +87,11 @@ const Register = ({ showLoginHandler }) => {
 {!loading &&     <form className='authForm' onSubmit={handleSubmit} autoComplete='off'>
 
 <h3>Vendor Register</h3>
+{error && (
+  <p style={{ color: "red", marginBottom: "10px" }}>
+    {error}
+  </p>
+)}
 <label>Username</label>
 <input type="text" name='username' value={username} onChange={(e) => setUsername(e.target.value)} placeholder='enter your name' /><br />
 <label>Email</label>
