@@ -1,34 +1,60 @@
 const Vendor = require('../models/Vendor');
 const jwt = require('jsonwebtoken');
-const dotEnv = require('dotenv');
 
-dotEnv.config()
-
-const secretKey = process.env.WhatIsYourName
-
-
-const verifyToken = async(req, res, next) => {
+const verifyToken = async (req, res, next) => {
     const token = req.headers.token;
 
     if (!token) {
-        return res.status(401).json({ error: "Token is required" });
+        return res.status(401).json({
+            error: "Token is required"
+        });
     }
-    try {
-        const decoded = jwt.verify(token, secretKey)
-        const vendor = await Vendor.findById(decoded.vendorId);
 
-        if (!vendor) {
-            return res.status(404).json({ error: "vendor not found" })
+    try {
+        if (!process.env.JWT_SECRET) {
+            console.error("JWT_SECRET is missing");
+
+            return res.status(500).json({
+                error: "Server configuration error"
+            });
         }
 
-        req.vendorId = vendor._id
+        const decoded = jwt.verify(
+            token,
+            process.env.JWT_SECRET
+        );
 
-        next()
+        console.log("Decoded token:", decoded);
+
+        const vendor = await Vendor.findById(
+            decoded.vendorId
+        );
+
+        if (!vendor) {
+            return res.status(404).json({
+                error: "Vendor not found"
+            });
+        }
+
+        req.vendorId = vendor._id;
+
+        console.log(
+            "Verified Vendor ID:",
+            req.vendorId
+        );
+
+        next();
+
     } catch (error) {
-        console.error(error)
-        return res.status(500).json({ error: "Invalid token" });
+        console.error(
+            "TOKEN VERIFICATION ERROR:",
+            error.message
+        );
+
+        return res.status(401).json({
+            error: "Invalid or expired token"
+        });
     }
+};
 
-}
-
-module.exports = verifyToken
+module.exports = verifyToken;
