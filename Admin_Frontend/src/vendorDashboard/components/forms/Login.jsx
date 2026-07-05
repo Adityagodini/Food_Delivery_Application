@@ -29,47 +29,56 @@ const loginHandler = async (e) => {
         });
 
         const data = await response.json();
+if (!response.ok) {
+    alert(data.error || "Login failed");
+    return;
+}
 
-        if (!response.ok) {
-            alert(data.error || "Login Failed");
-            return;
-        }
+alert("Login success");
 
-        alert("Login Successful");
+localStorage.setItem("loginToken", data.token);
 
-        localStorage.setItem("loginToken", data.token);
+const vendorId = data.vendorId;
 
-        const vendorId = data.vendorId;
+console.log("Checking VendorId:", vendorId);
 
-        const vendorResponse = await fetch(
-            `${API_URL}/vendor/single-vendor/${vendorId}`
+const vendorResponse = await fetch(
+    `${API_URL}/vendor/single-vendor/${vendorId}`
+);
+
+const vendorData = await vendorResponse.json();
+
+if (vendorResponse.ok) {
+
+    // Save firm only if vendor already has one
+    if (
+        vendorData.vendorFirmId &&
+        vendorData.vendor.firm &&
+        vendorData.vendor.firm.length > 0
+    ) {
+        localStorage.setItem(
+            "firmId",
+            vendorData.vendorFirmId
         );
 
-        const vendorData = await vendorResponse.json();
+        localStorage.setItem(
+            "firmName",
+            vendorData.vendor.firm[0].firmName
+        );
+    }
 
-        if (vendorResponse.ok) {
+    showWelcomeHandler();
 
-            localStorage.setItem(
-                "firmId",
-                vendorData.vendorFirmId
-            );
+    setEmail("");
+    setPassword("");
 
-            if (vendorData.vendor.firm.length > 0) {
-
-                localStorage.setItem(
-                    "firmName",
-                    vendorData.vendor.firm[0].firmName
-                );
-
-            }
-
-        }
-
-        showWelcomeHandler();
-
-        window.location.reload();
-
-    } catch (err) {
+    window.location.reload();
+} else {
+    alert(vendorData.error || "Could not load vendor details");
+}
+    } 
+    
+    catch (err) {
 
         console.log(err);
         alert("Login Failed");
