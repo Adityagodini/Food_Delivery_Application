@@ -55,20 +55,13 @@ const vendorRegister = async (req, res) => {
         });
     }
 };
-
 const vendorLogin = async (req, res) => {
+    const { email, password } = req.body;
+
     try {
-        let { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({
-                error: "Email and password are required"
-            });
-        }
-
-        email = email.trim().toLowerCase();
-
-        const vendor = await Vendor.findOne({ email });
+        const vendor = await Vendor.findOne({
+            email: email.trim().toLowerCase()
+        });
 
         if (!vendor) {
             return res.status(401).json({
@@ -87,8 +80,9 @@ const vendorLogin = async (req, res) => {
             });
         }
 
-        if (!secretKey) {
-            console.error("JWT secret is missing");
+        if (!process.env.JWT_SECRET) {
+            console.error("JWT_SECRET is missing");
+
             return res.status(500).json({
                 error: "Server configuration error"
             });
@@ -96,7 +90,7 @@ const vendorLogin = async (req, res) => {
 
         const token = jwt.sign(
             { vendorId: vendor._id },
-            secretKey,
+            process.env.JWT_SECRET,
             { expiresIn: "1h" }
         );
 
@@ -107,10 +101,10 @@ const vendorLogin = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("VENDOR LOGIN ERROR:", error);
+        console.error("LOGIN ERROR:", error);
 
         return res.status(500).json({
-            error: error.message || "Internal server error"
+            error: "Internal server error"
         });
     }
 };
