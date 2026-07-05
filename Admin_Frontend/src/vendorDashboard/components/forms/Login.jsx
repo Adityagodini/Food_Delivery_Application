@@ -14,43 +14,72 @@ const Login = ({showWelcomeHandler}) => {
   }
   
 
-  const loginHandler = async(e)=>{
-      e.preventDefault();
-    setLoading(true); 
-      try {
-          const response = await fetch(`${API_URL}/vendor/login`, {
-            method: 'POST',
-            headers:{
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({email, password})
-          })
-          const data = await response.json();
-          if(response.ok){
-            alert('Login success');
-            setEmail("");
-            setPassword("");
-            localStorage.setItem('loginToken', data.token);
-            showWelcomeHandler()
+const loginHandler = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-          }
-          const vendorId = data.vendorId
-          console.log("checking for VendorId:",vendorId)
-          const vendorResponse = await fetch(`${API_URL}/vendor/single-vendor/${vendorId}`)
-          window.location.reload()
-          const vendorData = await vendorResponse.json();
-          if(vendorResponse.ok){
-            const vendorFirmId = vendorData.vendorFirmId;
-            const vendorFirmName = vendorData.vendor.firm[0].firmName;
-            localStorage.setItem('firmId', vendorFirmId);
-            localStorage.setItem('firmName', vendorFirmName)
-          }
-      } catch (error) {
-          alert("login fail")
-      } finally {
-        setLoading(false); 
-      }
-  }
+    try {
+
+        const response = await fetch(`${API_URL}/vendor/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.error || "Login Failed");
+            return;
+        }
+
+        alert("Login Successful");
+
+        localStorage.setItem("loginToken", data.token);
+
+        const vendorId = data.vendorId;
+
+        const vendorResponse = await fetch(
+            `${API_URL}/vendor/single-vendor/${vendorId}`
+        );
+
+        const vendorData = await vendorResponse.json();
+
+        if (vendorResponse.ok) {
+
+            localStorage.setItem(
+                "firmId",
+                vendorData.vendorFirmId
+            );
+
+            if (vendorData.vendor.firm.length > 0) {
+
+                localStorage.setItem(
+                    "firmName",
+                    vendorData.vendor.firm[0].firmName
+                );
+
+            }
+
+        }
+
+        showWelcomeHandler();
+
+        window.location.reload();
+
+    } catch (err) {
+
+        console.log(err);
+        alert("Login Failed");
+
+    } finally {
+
+        setLoading(false);
+
+    }
+};
 
   return (
     <div className="loginSection">
